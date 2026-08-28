@@ -104,9 +104,6 @@ private:
     }
 
 public:
-    // --------------------------------------------------------
-    // Constructors
-    // --------------------------------------------------------
 
     Date()
         : year(0),
@@ -125,10 +122,6 @@ public:
           day(dayValue)
     {
     }
-
-    // --------------------------------------------------------
-    // Validation
-    // --------------------------------------------------------
 
     bool isEmpty() const
     {
@@ -153,10 +146,6 @@ public:
                day <= daysInMonth(year, month);
     }
 
-    // --------------------------------------------------------
-    // Conversion
-    // --------------------------------------------------------
-
     std::string toString() const
     {
         if (isEmpty())
@@ -176,23 +165,16 @@ public:
         return output.str();
     }
 
-    // --------------------------------------------------------
-    // Parsing
-    // --------------------------------------------------------
-
     static bool tryParse(
         const std::string& text,
         Date& result
     )
     {
-        // Empty string means no deadline.
         if (text.empty())
         {
             result = Date();
             return true;
         }
-
-        // Required format: YYYY-MM-DD
         if (text.size() != 10 ||
             text[4] != '-' ||
             text[7] != '-')
@@ -200,7 +182,6 @@ public:
             return false;
         }
 
-        // Every other character must be a digit.
         for (std::size_t i = 0; i < text.size(); ++i)
         {
             if (i == 4 || i == 7)
@@ -245,14 +226,9 @@ public:
             return false;
         }
     }
-
-    // --------------------------------------------------------
-    // Comparison
-    // --------------------------------------------------------
-
+    
     bool operator<(const Date& other) const
     {
-        // Empty deadlines are considered later than real dates.
         if (isEmpty() || other.isEmpty())
         {
             return !isEmpty() && other.isEmpty();
@@ -281,9 +257,6 @@ private:
     Date deadline;
 
 public:
-    // --------------------------------------------------------
-    // Constructor
-    // --------------------------------------------------------
 
     Task(
         std::string titleValue,
@@ -297,10 +270,6 @@ public:
           deadline(deadlineValue)
     {
     }
-
-    // --------------------------------------------------------
-    // Getters
-    // --------------------------------------------------------
 
     const std::string& getTitle() const
     {
@@ -322,9 +291,6 @@ public:
         return deadline;
     }
 
-    // --------------------------------------------------------
-    // Setters
-    // --------------------------------------------------------
 
     void setTitle(std::string newTitle)
     {
@@ -346,9 +312,6 @@ public:
         deadline = newDeadline;
     }
 
-    // --------------------------------------------------------
-    // Behavior
-    // --------------------------------------------------------
 
     void toggleStatus()
     {
@@ -408,9 +371,6 @@ private:
         }
     }
 
-    // --------------------------------------------------------
-    // Parse one task from the file
-    // --------------------------------------------------------
 
     static bool parseTask(
         std::ifstream& input,
@@ -430,17 +390,12 @@ private:
             return false;
         }
 
-        // Title must be a valid single-line field.
         if (title.empty() ||
             title.find('\r') != std::string::npos ||
             title.find('\n') != std::string::npos)
         {
             return false;
         }
-
-        // ----------------------------------------------------
-        // Priority
-        // ----------------------------------------------------
 
         int priorityValue = 0;
 
@@ -469,11 +424,7 @@ private:
         {
             return false;
         }
-
-        // ----------------------------------------------------
-        // Status
-        // ----------------------------------------------------
-
+        
         int statusValue = 0;
 
         try
@@ -495,10 +446,6 @@ private:
             return false;
         }
 
-        // ----------------------------------------------------
-        // Deadline
-        // ----------------------------------------------------
-
         Date deadline;
 
         if (!Date::tryParse(
@@ -507,10 +454,6 @@ private:
         {
             return false;
         }
-
-        // ----------------------------------------------------
-        // Construct task
-        // ----------------------------------------------------
 
         task = Task(
             title,
@@ -525,9 +468,6 @@ private:
     }
 
 public:
-    // --------------------------------------------------------
-    // Constructor
-    // --------------------------------------------------------
 
     explicit TaskRepository(
         std::string filenameValue
@@ -536,16 +476,10 @@ public:
     {
     }
 
-    // --------------------------------------------------------
-    // Save
-    // --------------------------------------------------------
-
     bool save(
         const std::vector<Task>& tasks
     ) const
     {
-        // Temporary-file approach:
-        // first complete the new file, then replace the old one.
         const std::string temporaryFilename =
             filename + ".tmp";
 
@@ -597,11 +531,8 @@ public:
             }
         }
 
-        // Remove the old file.
-        // Failure is acceptable if it did not exist.
         std::remove(filename.c_str());
 
-        // Replace it with the successfully written file.
         if (std::rename(
                 temporaryFilename.c_str(),
                 filename.c_str()) != 0)
@@ -616,10 +547,6 @@ public:
         return true;
     }
 
-    // --------------------------------------------------------
-    // Load
-    // --------------------------------------------------------
-
     bool load(
         std::vector<Task>& tasks,
         std::string& errorMessage
@@ -627,15 +554,10 @@ public:
     {
         std::ifstream input(filename);
 
-        // First run: there is no save file yet.
         if (!input)
         {
             return true;
         }
-
-        // ----------------------------------------------------
-        // Header
-        // ----------------------------------------------------
 
         std::string header;
 
@@ -654,10 +576,6 @@ public:
 
             return false;
         }
-
-        // ----------------------------------------------------
-        // Number of tasks
-        // ----------------------------------------------------
 
         std::string countLine;
 
@@ -681,7 +599,6 @@ public:
             return false;
         }
 
-        // Protection against absurd/corrupt files.
         constexpr std::size_t maxTasks = 100000;
 
         if (taskCount > maxTasks)
@@ -691,10 +608,6 @@ public:
 
             return false;
         }
-
-        // ----------------------------------------------------
-        // Load all tasks into a temporary vector
-        // ----------------------------------------------------
 
         std::vector<Task> loadedTasks;
         loadedTasks.reserve(taskCount);
@@ -725,8 +638,6 @@ public:
             );
         }
 
-        // Replace current state only after
-        // the entire file has been loaded successfully.
         tasks = std::move(loadedTasks);
 
         return true;
@@ -738,10 +649,6 @@ class TaskManager
 private:
     std::vector<Task> tasks;
     TaskRepository repository;
-
-    // --------------------------------------------------------
-    // Save current state
-    // --------------------------------------------------------
 
     bool saveCurrentState(
         std::string& errorMessage
@@ -757,10 +664,6 @@ private:
 
         return true;
     }
-
-    // --------------------------------------------------------
-    // Case conversion helper
-    // --------------------------------------------------------
 
     static std::string toLower(
         std::string text
@@ -782,9 +685,6 @@ private:
     }
 
 public:
-    // --------------------------------------------------------
-    // Constructor
-    // --------------------------------------------------------
 
     explicit TaskManager(
         TaskRepository repositoryValue
@@ -793,10 +693,6 @@ public:
               std::move(repositoryValue))
     {
     }
-
-    // --------------------------------------------------------
-    // Persistence
-    // --------------------------------------------------------
 
     bool load(
         std::string& errorMessage
@@ -808,18 +704,10 @@ public:
         );
     }
 
-    // --------------------------------------------------------
-    // Access
-    // --------------------------------------------------------
-
     const std::vector<Task>& getTasks() const
     {
         return tasks;
     }
-
-    // --------------------------------------------------------
-    // Add
-    // --------------------------------------------------------
 
     bool addTask(
         std::string title,
@@ -853,7 +741,6 @@ public:
             deadline
         );
 
-        // Roll back if persistence fails.
         if (!saveCurrentState(errorMessage))
         {
             tasks.pop_back();
@@ -862,10 +749,6 @@ public:
 
         return true;
     }
-
-    // --------------------------------------------------------
-    // Delete
-    // --------------------------------------------------------
 
     bool deleteTask(
         std::size_t index,
@@ -887,7 +770,6 @@ public:
             static_cast<std::ptrdiff_t>(index)
         );
 
-        // Restore the task if saving fails.
         if (!saveCurrentState(errorMessage))
         {
             tasks.insert(
@@ -901,10 +783,6 @@ public:
 
         return true;
     }
-
-    // --------------------------------------------------------
-    // Toggle status
-    // --------------------------------------------------------
 
     bool toggleTask(
         std::size_t index,
@@ -921,7 +799,6 @@ public:
 
         tasks[index].toggleStatus();
 
-        // Undo the change if saving fails.
         if (!saveCurrentState(errorMessage))
         {
             tasks[index].toggleStatus();
@@ -930,10 +807,6 @@ public:
 
         return true;
     }
-
-    // --------------------------------------------------------
-    // Edit
-    // --------------------------------------------------------
 
     bool editTask(
         std::size_t index,
@@ -976,7 +849,6 @@ public:
         tasks[index].setStatus(newStatus);
         tasks[index].setDeadline(newDeadline);
 
-        // Restore old state if saving fails.
         if (!saveCurrentState(errorMessage))
         {
             tasks[index] = std::move(backup);
@@ -985,31 +857,6 @@ public:
 
         return true;
     }
-
-    // --------------------------------------------------------
-    // Search
-    // --------------------------------------------------------
-    //
-    // Search is:
-    //   - case-insensitive
-    //   - substring-based
-    //
-    // It searches:
-    //   - title
-    //   - priority
-    //   - status
-    //   - deadline
-    //
-    // Returned values are the indexes of matching tasks.
-    //
-    // Example:
-    //
-    //   Query: "cpp"
-    //   Query: "high"
-    //   Query: "completed"
-    //   Query: "2026-09"
-    //
-    // --------------------------------------------------------
 
     std::vector<std::size_t> searchTasks(
         const std::string& query
@@ -1078,10 +925,6 @@ class ConsoleUI
 private:
     TaskManager& manager;
 
-    // --------------------------------------------------------
-    // General input helpers
-    // --------------------------------------------------------
-
     static bool isBlank(
         const std::string& text
     )
@@ -1118,8 +961,6 @@ private:
             return "";
         }
 
-        // Remove Windows carriage return
-        // if present.
         if (!input.empty() &&
             input.back() == '\r')
         {
@@ -1128,10 +969,6 @@ private:
 
         return input;
     }
-
-    // --------------------------------------------------------
-    // Integer input
-    // --------------------------------------------------------
 
     static int getInt(
         const std::string& prompt
@@ -1147,9 +984,6 @@ private:
             int value = 0;
             char extra = '\0';
 
-            // Reject input such as:
-            //   12abc
-            //   3.14
             if (stream >> value &&
                 !(stream >> extra))
             {
@@ -1166,10 +1000,6 @@ private:
                 << "Please enter a number.\n";
         }
     }
-
-    // --------------------------------------------------------
-    // Priority input
-    // --------------------------------------------------------
 
     static Priority getPriority()
     {
@@ -1195,10 +1025,6 @@ private:
         }
     }
 
-    // --------------------------------------------------------
-    // Status input
-    // --------------------------------------------------------
-
     static TaskStatus getStatus()
     {
         while (true)
@@ -1223,10 +1049,6 @@ private:
                 << "1 or 0.\n";
         }
     }
-
-    // --------------------------------------------------------
-    // Deadline input
-    // --------------------------------------------------------
 
     static Date getDeadline()
     {
@@ -1255,10 +1077,6 @@ private:
         }
     }
 
-    // --------------------------------------------------------
-    // Task index input
-    // --------------------------------------------------------
-
     std::size_t getTaskIndex(
         const std::string& prompt
     ) const
@@ -1271,7 +1089,6 @@ private:
             const int number =
                 getInt(prompt);
 
-            // 0 = cancel
             if (number == 0)
             {
                 return tasks.size();
@@ -1293,10 +1110,6 @@ private:
                 << ", or 0 to cancel.\n";
         }
     }
-
-    // --------------------------------------------------------
-    // Display one task
-    // --------------------------------------------------------
 
     static void printTask(
         const Task& task,
@@ -1335,10 +1148,6 @@ private:
             << "------------------------------------------------------------\n";
     }
 
-    // --------------------------------------------------------
-    // Show tasks
-    // --------------------------------------------------------
-
     void showTasks() const
     {
         const auto& tasks =
@@ -1367,10 +1176,6 @@ private:
             );
         }
     }
-
-    // --------------------------------------------------------
-    // Add task
-    // --------------------------------------------------------
 
     void addTask()
     {
@@ -1422,10 +1227,6 @@ private:
                 << '\n';
         }
     }
-
-    // --------------------------------------------------------
-    // Search tasks
-    // --------------------------------------------------------
 
     void searchTasks() const
     {
@@ -1483,10 +1284,6 @@ private:
             );
         }
     }
-
-    // --------------------------------------------------------
-    // Delete task
-    // --------------------------------------------------------
 
     void deleteTask()
     {
@@ -1552,10 +1349,6 @@ private:
         }
     }
 
-    // --------------------------------------------------------
-    // Toggle task
-    // --------------------------------------------------------
-
     void toggleTask()
     {
         if (manager.getTasks().empty())
@@ -1604,10 +1397,6 @@ private:
         }
     }
 
-    // --------------------------------------------------------
-    // Edit task
-    // --------------------------------------------------------
-
     void editTask()
     {
         if (manager.getTasks().empty())
@@ -1642,10 +1431,6 @@ private:
             << original.getTitle()
             << "\n";
 
-        // ----------------------------------------------------
-        // New title
-        // ----------------------------------------------------
-
         std::string title;
 
         while (true)
@@ -1662,23 +1447,11 @@ private:
                 << "Title cannot be empty.\n";
         }
 
-        // ----------------------------------------------------
-        // New priority
-        // ----------------------------------------------------
-
         const Priority priority =
             getPriority();
 
-        // ----------------------------------------------------
-        // New status
-        // ----------------------------------------------------
-
         const TaskStatus status =
             getStatus();
-
-        // ----------------------------------------------------
-        // New deadline
-        // ----------------------------------------------------
 
         const Date deadline =
             getDeadline();
@@ -1705,10 +1478,6 @@ private:
         }
     }
 
-    // --------------------------------------------------------
-    // Menu
-    // --------------------------------------------------------
-
     static void printMenu()
     {
         std::cout
@@ -1726,9 +1495,6 @@ private:
     }
 
 public:
-    // --------------------------------------------------------
-    // Constructor
-    // --------------------------------------------------------
 
     explicit ConsoleUI(
         TaskManager& managerValue
@@ -1736,10 +1502,6 @@ public:
         : manager(managerValue)
     {
     }
-
-    // --------------------------------------------------------
-    // Application loop
-    // --------------------------------------------------------
 
     void run()
     {
