@@ -1,248 +1,240 @@
-# Study Tracker
+Study Tracker
 
-A lightweight command-line task manager built with **C++17** and designed around object-oriented programming principles.
+A command-line study and task manager written in C++17.
 
-Study Tracker helps users manage study tasks with priorities, completion status, and optional deadlines. Tasks are persisted locally in a text file, allowing them to survive between program executions.
+I made this project as a way to practise building something a little closer to a real application instead of another collection of small programming exercises. The project started with the basic idea of creating and managing tasks, then grew to include persistent storage, input validation, date handling, searching, editing, and some defensive handling of file errors.
 
----
+It is still a small project, and that's intentional. I wanted to be able to understand and build each part myself.
 
-## Features
+Features
 
-* Create and manage study tasks
-* Assign **High**, **Medium**, or **Low** priority
-* Track task completion status
-* Add optional deadlines
-* Edit existing tasks
-* Delete tasks with confirmation
-* Toggle completion status
-* Persistent local storage using `tasks.txt`
-* Input validation and error handling
-* Basic protection against corrupted task data
-* Simple and interactive console interface
+Study Tracker currently supports:
 
----
+- Creating tasks
+- Setting task priorities
+- Marking tasks as completed or incomplete
+- Adding optional deadlines
+- Viewing all tasks
+- Searching tasks
+- Editing tasks
+- Deleting tasks
+- Saving tasks between sessions
+- Loading previously saved tasks
+- Input validation and error handling
+- Confirmation before deleting tasks
 
-## Demo
+Each task contains a title, priority, completion status, and optional deadline.
 
-```text
+Priorities are:
+
+High
+Medium
+Low
+
+Dates use the format:
+
+YYYY-MM-DD
+
+A deadline can also be left empty.
+
+The menu
+
+When the program starts, it presents a simple command-line interface:
+
 ============================================================
                      STUDY TRACKER
 ============================================================
 1. Show My Tasks
-2. Add a New Task
-3. Delete a Task
-4. Toggle Task Status
-5. Edit a Task
-6. Exit
+2. Search Tasks
+3. Add a New Task
+4. Delete a Task
+5. Toggle Task Status
+6. Edit a Task
+7. Exit
 ============================================================
-Your choice:
-```
 
-Example task:
+The application loads saved tasks before entering the main loop, so the task list survives between executions.
 
-```text
-1. Study Algorithms
-   Priority: High
-   Status: Incomplete
-   Deadline: 2026-09-01
-------------------------------------------------------------
-```
+How it is structured
 
----
+Although the current version is contained in one ".cpp" file, I tried to keep the different responsibilities separate instead of putting everything inside "main()".
 
-## Tech Stack
+The main structure is:
 
-| Technology    | Purpose                       |
-| ------------- | ----------------------------- |
-| **C++17**     | Application development       |
-| **STL**       | Data structures and utilities |
-| `std::vector` | In-memory task storage        |
-| `fstream`     | Persistent file storage       |
-| `regex`       | Deadline format validation    |
-| `enum class`  | Type-safe task priorities     |
+Priority / TaskStatus
+        │
+        ▼
+      Task ◄──── Date
+        │
+        ▼
+   TaskManager
+      /     \
+     ▼       ▼
+Repository  ConsoleUI
+     │
+     ▼
+ tasks.txt
 
----
+"Date"
 
-## Project Architecture
+"Date" is a small class responsible for representing and validating deadlines.
 
-The application is organized around two primary classes:
+It supports:
 
-```text
-┌──────────────────────┐
-│      Priority        │
-│   HIGH / MED / LOW   │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│        Task          │
-│                      │
-│ - title              │
-│ - priority           │
-│ - completed          │
-│ - deadline           │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│     TaskManager      │
-│                      │
-│ - task collection    │
-│ - user interaction   │
-│ - validation         │
-│ - CRUD operations    │
-│ - persistence        │
-└──────────┬───────────┘
-           │
-           ▼
-      ┌───────────┐
-      │ tasks.txt │
-      └───────────┘
-```
+- Year, month, and day
+- Empty dates
+- Date validation
+- Leap-year calculation
+- Correct days for each month
+- Parsing "YYYY-MM-DD"
+- Converting dates back to strings
+- Comparing dates
 
-### `Priority`
+An empty "Date" represents a task without a deadline.
 
-An `enum class` representing the three available priority levels:
+One reason I made this a separate class was to avoid scattering date-related logic throughout the rest of the program.
 
-```cpp
-enum class Priority
-{
-    HIGH = 1,
-    MEDIUM = 2,
-    LOW = 3
-};
-```
+"Task"
 
-### `Task`
-
-Represents an individual study task.
+"Task" represents the actual unit of work.
 
 A task contains:
 
-* `title`
-* `priority`
-* `completed`
-* `deadline`
+Title
+Priority
+Status
+Deadline
 
-The attributes are private and accessed through public member functions, providing encapsulation.
+The task's data is kept private and accessed through member functions.
 
-### `TaskManager`
+For example, changing its status is handled by the task itself:
 
-Responsible for managing the application as a whole.
+task.toggleStatus();
+
+rather than having unrelated parts of the program modify the internal state directly.
+
+"TaskRepository"
+
+"TaskRepository" is responsible for persistence.
+
+It handles reading and writing the task data to:
+
+tasks.txt
+
+The saved file starts with a version identifier:
+
+STUDY_TRACKER_V1
+
+This gives the file format an explicit version rather than treating every text file as automatically valid.
+
+The repository also performs validation when loading data. Invalid file headers, malformed tasks, invalid values, and unreasonable task counts are rejected instead of blindly being loaded into the application.
+
+When saving, the program writes to a temporary file before replacing the existing task file. This is intended to reduce the chance of leaving behind a partially-written save file if writing fails.
+
+"TaskManager"
+
+"TaskManager" is where most of the actual task operations live.
 
 It handles:
 
-* Task collection management
-* Menu interaction
-* Input validation
-* Adding tasks
-* Deleting tasks
-* Editing tasks
-* Completion status changes
-* Saving and loading tasks
+- Adding tasks
+- Deleting tasks
+- Editing tasks
+- Toggling task status
+- Searching tasks
+- Loading tasks
+- Saving changes
 
-The application starts by loading saved tasks and continues running until the user chooses to exit.
+It also takes care of keeping the in-memory state consistent with the saved state.
 
----
+For example, when an operation modifies the task list, the manager attempts to save the new state. If saving fails, the previous state can be restored rather than leaving the application in a state that was never successfully persisted.
 
-## Task Data
+"ConsoleUI"
 
-Each task consists of four pieces of information:
+"ConsoleUI" handles interaction with the user.
 
-| Field    | Type       | Description                     |
-| -------- | ---------- | ------------------------------- |
-| Title    | `string`   | Name or description of the task |
-| Priority | `Priority` | High, Medium, or Low            |
-| Status   | `bool`     | Completed or Incomplete         |
-| Deadline | `string`   | Optional `YYYY-MM-DD` deadline  |
+It is responsible for:
 
-Example:
+- Displaying the menu
+- Reading input
+- Asking for task information
+- Displaying tasks
+- Asking for deletion confirmation
+- Showing success and error messages
 
-```text
-Title:      Study Algorithms
-Priority:   High
-Status:     Incomplete
-Deadline:   2026-09-01
-```
+The UI uses "TaskManager" to perform the actual operations instead of directly managing the task collection.
 
----
+This was one of the main design ideas I wanted to practise with the project: the code that talks to the user doesn't have to be the code that manages the data.
 
-## Input Validation
+Searching
 
-The program validates user input at several levels.
+The search system accepts a text query and performs a case-insensitive search.
 
-### Numeric Input
+It can match information such as:
 
-Invalid numeric input is rejected and the user is prompted again.
+- Task titles
+- Priorities
+- Completion status
+- Deadlines
 
-### Task Titles
+For example, searching for:
 
-Task titles cannot be empty or contain only whitespace.
+algorithm
 
-### Priority
+can find:
 
-Only the following values are accepted:
+Study Algorithms
 
-```text
-1 → High
-2 → Medium
-3 → Low
-```
+while:
 
-### Completion Status
+high
 
-Only:
+can find tasks with high priority.
 
-```text
-1 → Completed
-0 → Incomplete
-```
+The search returns the positions of matching tasks, which are then used by the UI to display the results.
 
-are accepted.
+Input validation
 
-### Deadlines
+A fair amount of the program is dedicated to dealing with bad input.
 
-Deadlines use the following format:
+The program checks for things such as:
 
-```text
-YYYY-MM-DD
-```
+- Invalid menu choices
+- Invalid numbers
+- Invalid task indexes
+- Empty task titles
+- Invalid priorities
+- Invalid task statuses
+- Invalid dates
+- Invalid save-file data
+- Failed file operations
+- Unexpected end-of-input
 
-An empty input is also accepted when no deadline is required.
+For example, a deadline such as:
 
-The current implementation validates the structure and numeric ranges of the date, but does not perform complete calendar validation.
+2026-02-30
 
----
+is rejected because February does not have 30 days.
 
-## Persistence
+Leap years are handled as well, so dates such as:
+
+2028-02-29
+
+can be considered valid.
+
+The goal isn't to make the program impossible to break, but to avoid assuming that every input or file will always be correct.
+
+Saving and loading
 
 Tasks are stored locally in:
 
-```text
 tasks.txt
-```
 
-The file contains the number of tasks followed by the data for each task.
+The file is created in the program's current working directory.
 
-Conceptually, the format is:
+A simplified example of the format is:
 
-```text
-<number of tasks>
-
-<title>
-<priority>
-<completion status>
-<deadline>
-
-<title>
-<priority>
-<completion status>
-<deadline>
-```
-
-For example:
-
-```text
+STUDY_TRACKER_V1
 2
 Study Algorithms
 1
@@ -252,287 +244,103 @@ Read C++ Book
 2
 1
 
-```
 
-The application automatically loads existing tasks when it starts and saves changes when tasks are added, deleted, edited, or updated.
+The program loads this file when it starts and saves changes after task operations.
 
-The loading process also performs validation and reports corrupted or invalid task data instead of blindly accepting it.
+If no save file exists, Study Tracker simply starts with an empty task list.
 
----
+There is no database or external service involved.
 
-## Getting Started
-
-### Prerequisites
+Building
 
 You need a C++17-compatible compiler.
 
-For example:
+With GCC:
 
-* GCC
-* Clang
-* MSVC
+g++ -std=c++17 -Wall -Wextra -pedantic study_tracker_V01.cpp -o study_tracker
 
-### Clone the Repository
+Then:
 
-```bash
-git clone <repository-url>
-cd <repository-directory>
-```
-
-### Compile
-
-Using `g++`:
-
-```bash
-g++ -std=c++17 -Wall -Wextra -pedantic main.cpp -o study_tracker
-```
-
-### Run
-
-Linux/macOS:
-
-```bash
 ./study_tracker
-```
 
-Windows:
+On Windows:
 
-```bash
 study_tracker.exe
-```
 
-The program will create or use `tasks.txt` in its working directory for persistent storage.
+The project only uses the C++ standard library, so there are no external dependencies.
 
----
+Project structure
 
-## Usage
+Currently the repository is intentionally simple:
 
-After launching the program, select an operation from the main menu.
-
-### 1. Show My Tasks
-
-Displays all currently stored tasks.
-
-If there are no tasks:
-
-```text
-Your task list is empty.
-```
-
-### 2. Add a New Task
-
-The program asks for:
-
-1. Task title
-2. Priority
-3. Completion status
-4. Optional deadline
-
-The new task is then added to the task collection and saved.
-
-### 3. Delete a Task
-
-Select a task by its number.
-
-The program asks for confirmation before permanently removing it.
-
-```text
-Are you sure? (y/n):
-```
-
-### 4. Toggle Task Status
-
-Quickly switches a task between:
-
-```text
-Incomplete ↔ Completed
-```
-
-### 5. Edit a Task
-
-An existing task can be modified through the editing menu:
-
-```text
-1. Change Title
-2. Change Priority
-3. Change Deadline
-4. Change Completion Status
-5. Finish Editing
-```
-
-Multiple properties can be changed during one editing session.
-
-### 6. Exit
-
-The current task list is saved before the application terminates.
-
----
-
-## Error Handling
-
-The program handles several common failure cases:
-
-* Invalid numeric input
-* Invalid menu selections
-* Invalid task numbers
-* Empty task titles
-* Invalid priority values
-* Invalid completion values
-* Invalid deadline formats
-* Missing task files
-* Empty task files
-* Corrupted task files
-* File-writing failures
-
-For example, if the task file cannot be opened for writing, the program reports the problem rather than claiming that the save succeeded.
-
----
-
-## OOP Concepts Demonstrated
-
-This project was built to practice practical object-oriented C++ rather than keeping all functionality inside `main()`.
-
-### Encapsulation
-
-Task data is kept private:
-
-```cpp
-class Task
-{
-private:
-    string title;
-    Priority priority;
-    bool completed;
-    string deadline;
-};
-```
-
-Interaction with the data happens through public member functions.
-
-### Abstraction
-
-Operations such as:
-
-```cpp
-task.toggleStatus();
-```
-
-hide the implementation details from the code using the object.
-
-### Separation of Responsibilities
-
-`Task` represents an individual task, while `TaskManager` handles the application workflow and collection of tasks.
-
-This keeps the basic domain object separate from the higher-level application logic.
-
----
-
-## Project Structure
-
-The current implementation is contained in a single C++ source file:
-
-```text
-.
-├── main.cpp
-├── tasks.txt        # Created automatically for persistence
+StudyTracker01/
+│
+├── study_tracker_V01.cpp
 └── README.md
-```
 
-The code can later be split into multiple source and header files as the project grows.
+"tasks.txt" is generated when the application runs.
 
-A possible future structure would be:
+The source file is currently kept as one file because this project is still at the stage where I am experimenting with the design. If I continue developing it, separating the classes into header and implementation files would be one of the next changes I'd make.
 
-```text
-StudyTracker/
-├── include/
-│   ├── Task.h
-│   └── TaskManager.h
-│
-├── src/
-│   ├── Task.cpp
-│   ├── TaskManager.cpp
-│   └── main.cpp
-│
-├── data/
-│   └── tasks.txt
-│
-└── README.md
-```
+What I wanted to practise
 
----
+This project was mainly about getting comfortable with the parts of C++ that become important once a program gets larger than a few functions.
 
-## Current Limitations
+Things I worked with include:
 
-The project intentionally keeps its scope relatively small.
+- C++17
+- Classes and objects
+- Encapsulation
+- "enum class"
+- "std::vector"
+- "std::string"
+- "std::fstream"
+- "std::stringstream" / "std::ostringstream"
+- File parsing
+- File persistence
+- Input validation
+- Exception handling
+- Searching
+- Date validation
+- CRUD-style operations
+- Separation of responsibilities
+- Basic error recovery
 
-Current limitations include:
+I also wanted to practise thinking about what should happen when something goes wrong, rather than only implementing the successful path.
 
-* No graphical interface
-* No database
-* No task search
-* No task filtering
-* No task sorting
-* No categories or tags
-* Deadline validation does not verify every possible calendar date
-* Deadlines are stored as strings rather than a dedicated date type
-* All application code currently resides in one source file
+Things I would improve
 
----
+Study Tracker is not intended to be a finished production application.
 
-## Future Improvements
+There are several directions I could take it from here:
 
-Possible future versions could introduce:
+- Split the source into ".h" and ".cpp" files
+- Add automated tests
+- Improve the search and filtering system
+- Add sorting by priority or deadline
+- Add categories or tags
+- Add overdue-task handling
+- Add recurring tasks
+- Add subtasks
+- Add study statistics
+- Replace the custom text format with a database
+- Improve the UI
+- Eventually build a graphical version
 
-* Task search
-* Filtering by priority or status
-* Sorting by deadline or priority
-* Overdue-task detection
-* "Today's tasks" view
-* Upcoming-deadline view
-* Task categories and tags
-* Subtasks
-* Recurring tasks
-* Study progress statistics
-* A dedicated `Date` class
-* Separate repository/persistence layer
-* Database support
-* Unit testing
-* Multi-file project organization
-* Graphical or web-based interface
+I would also like to revisit some of the design decisions as I become more comfortable with C++ and software architecture.
+
+Why this project exists
+
+I wanted to build something where the individual pieces actually had to work together.
+
+A task class by itself isn't particularly interesting. A file reader by itself isn't particularly interesting either. But once the program has to create an object, validate its data, store it, load it again, let the user modify it, handle failures, and keep everything consistent, the design starts becoming more important.
+
+That's what I wanted to learn from this project.
+
+It is a small application, but it is also a snapshot of where I am in learning C++ and software design.
 
 ---
 
-## Learning Goals
+Valeria the Knave
 
-This project was developed as a practical exercise in:
-
-* C++17
-* Object-oriented programming
-* Encapsulation
-* STL containers
-* File I/O
-* Input validation
-* Regular expressions
-* Error handling
-* CRUD operations
-* Persistent application state
-* Designing a small console application
-
-It represents a step toward building larger and more maintainable C++ applications.
-
----
-
-## License
-
-This project is available for educational and personal use.
-
-If you reuse or modify the project, attribution is appreciated.
-
----
-
-## Author
-
-**Valeria the Knave**
-
-Built with C++17 as a practical study project focused on object-oriented programming and application design.
-
+C++17 · Command Line · Object-Oriented Programming
