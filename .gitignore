@@ -1,0 +1,34 @@
+# Build artifacts
+study_tracker
+study_tracker.exe
+study_tracker_V01
+*.o
+*.obj
+*.out
+*.exe
+*.app
+
+# Generated data
+tasks.txt
+tasks.txt.tmp
+*.tmp
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# CMake
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Clangd / compiledb
+compile_commands.json
+.cache/
